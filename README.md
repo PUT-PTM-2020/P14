@@ -17,7 +17,7 @@
 	  
 	     Na ekranie wprowadzania hasła wybieramy kolejny znak za pomocą __góra__, przesuwamy się po wprowadzonych znakach za pomocą __lewo__ oraz __prawo__, a wprowadzone dane akceptujemy za pomocą __dół__.
 		 
-   1. __WiFi Disconnect__ 	- odłącz się od aktualnej sieci bezprzewodowej.
+   1. __WiFi Disconnect__   - odłącz się od aktualnej sieci bezprzewodowej.
    1. __Set time and date__ - ręcznie ustaw datę i czas urządzenia.
    
       Za pomocą __góra__ zmieniamy wartość pola, które wskazuje kursor, przesuwamy się po polach za pomocą __lewo__ oraz __prawo__, a dane akceptujemy z użyciem __dół__.
