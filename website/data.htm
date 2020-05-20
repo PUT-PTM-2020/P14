@@ -83,6 +83,15 @@
               placeholder="Amount">
             <div class="my-3"></div>
 
+            <div class="form-group">
+              <select class="form-control" id="form-field">
+                <option value="raw">Raw data</option>
+                <option value="line">Line chart</option>
+                <option value="bar">Bar chart</option>
+              </select>
+            </div>
+            <div class="my-3"></div>
+
             <button type="button" onclick="getData()" class="btn btn-light">Submit</button>
           </div>
         </div>
@@ -91,6 +100,7 @@
   </section>
 
   <div class="my-5"></div>
+
 
   <div class="row justify-content-center">
     <div class="col-auto">
@@ -116,9 +126,18 @@
     <div id="spinner" class="spinner-grow" role="status">
       <span class="sr-only">Loading data...</span>
     </div>
+
+    <div class="container-fluid" id="progress-bar" style="display: none;">
+      <div class="progress">
+        <div id="progress-bar-handle" class="progress-bar bg-warning" style="width: 25%"></div>
+      </div>
+    </div>
   </div>
 
   <div class="my-5"></div>
+
+  <canvas id="myChart" width="400" height="400"></canvas>
+
 
   <footer class="bg-black small text-center text-white-50">
     <div class="container">
@@ -130,13 +149,14 @@
 
 </body>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 <script type="text/javascript">
 
   var parent = document.getElementById('fetched_data');
   var url = window.location.href;
   var amount = 0;
 
-  var url = 'http://192.168.0.106/';
+  var url = 'http://192.168.0.50/';
 
   var to = url.lastIndexOf('/');
   to = to == -1 ? url.length : to + 1;
@@ -148,7 +168,7 @@
         .then(res => res.json())
         .then(obj => {
           amount = obj.amount;
-          document.getElementById('info').innerHTML = 'The device has <b>' + obj.amount + '</b> logs.<br>Please specify the amount to fetch and the offset (0 means latest logs).';
+          document.getElementById('info').innerHTML = 'The device has <b>' + obj.amount + '</b> logs.<br>Please specify the amount to fetch, the offset (0 means latest logs) and data representation.';
           document.getElementById('amount').style.display = 'block';
           document.getElementById('spinner').style.display = 'none';
         })
@@ -171,7 +191,10 @@
 
   function getData() {
     var offset = parseInt(document.getElementById('offset-field').value);
-    var N = parseInt(document.getElementById('amount-field').value);
+    var N = parseInt(document.getElementById('amount-field').value) + 1;
+
+    var formField = document.getElementById("form-field");
+    var form = formField.options[formField.selectedIndex].value;
 
     if (!Number.isInteger(offset) || offset < 0) {
       document.getElementById('error').innerHTML = 'Given offset is not a positive integer';
@@ -189,18 +212,20 @@
     document.getElementById('phase1').style.display = 'none';
 
     var ix = 0;
+    var fetchedData = [];
+    var loaded = false;
 
     for (var i = 0; i < N; i++) {
       setTimeout(() => {
-        console.log(i+' fetch:'+offset+' '+ix);
         fetchJson(url, offset, ix)
           .then(obj => {
 
-              if (obj.amount == 0) {
-                document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
-                return;
-              }
+            if (obj.amount == 0) {
+              document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
+              return;
+            }
 
+            if (form === "raw") {
               var row = document.createElement('tr');
               parent.appendChild(row);
 
@@ -219,10 +244,77 @@
                 row.appendChild(data);
               });
 
-              ix++;
-              });
+            } else {
+              fetchedData.push(obj);
+
+              document.getElementById('spinner').style.display = 'none';
+              document.getElementById('progress-bar').style.display = 'block';
+
+              var width = Math.round((fetchedData.length / N) * 100);
+              console.log('N: ' + N + '; Width: ' + width + '; Ix: ' + ix);
+
+              document.getElementById('progress-bar-handle').setAttribute('style', 'width:' + width + '%;');
+
+              if (ix == N - 2) {
+                document.getElementById('progress-bar').style.display = 'none';
+                document.getElementById('spinner').style.display = 'block';
+                loaded = true;
+              }
+            }
+
+            ix++;
+          });
       }, (i + 1) * 2200);
     }
+
+    setInterval(() => {
+      if (loaded) {
+        console.log(fetchedData);
+
+        if (form === 'bar') {
+          document.getElementById('spinner').style.display = 'none';
+          var ctx = document.getElementById('myChart').getContext('2d');
+          var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+              datasets: [{
+                label: '# of Votes',
+                data: [12, 19, 3, 5, 2, 3],
+                backgroundColor: [
+                  'rgba(255, 99, 132, 0.2)',
+                  'rgba(54, 162, 235, 0.2)',
+                  'rgba(255, 206, 86, 0.2)',
+                  'rgba(75, 192, 192, 0.2)',
+                  'rgba(153, 102, 255, 0.2)',
+                  'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                  'rgba(255, 99, 132, 1)',
+                  'rgba(54, 162, 235, 1)',
+                  'rgba(255, 206, 86, 1)',
+                  'rgba(75, 192, 192, 1)',
+                  'rgba(153, 102, 255, 1)',
+                  'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                yAxes: [{
+                  ticks: {
+                    beginAtZero: true
+                  }
+                }]
+              }
+            }
+          });
+        }
+      }
+
+      loaded = false;
+    }, 2200);
   }
 </script>
 
