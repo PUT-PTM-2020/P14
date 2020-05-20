@@ -136,6 +136,8 @@
   var url = window.location.href;
   var amount = 0;
 
+  var url = 'http://192.168.0.106/';
+
   var to = url.lastIndexOf('/');
   to = to == -1 ? url.length : to + 1;
   url = url.substring(0, to);
@@ -190,6 +192,7 @@
 
     for (var i = 0; i < N; i++) {
       setTimeout(() => {
+        console.log(i+' fetch:'+offset+' '+ix);
         fetchJson(url, offset, ix)
           .then(obj => {
 

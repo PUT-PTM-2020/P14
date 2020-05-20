@@ -11,6 +11,7 @@ void MENU_Clock(void);
 void MENU_Options(void);
 void MENU_OptionsSetDateTime(void);
 void MENU_OptionsWifiList(void);
+void MENU_SetDisplayTimeout(void);
 void MENU_PasswdInput(void);
 void MENU_IncTick(void);
 void MENU_ForceUpdate(void);

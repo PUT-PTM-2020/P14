@@ -131,6 +131,7 @@ typedef enum {
 	ST_WiFi,
 	ST_PassInput,
 	ST_SetDateTime,
+	ST_SetDisplay,
 	ST_None
 } StateEnum;
 
