@@ -46,8 +46,8 @@ extern RGB_Mode R_Mode;
 /* kazda opcja musi sie konczyc srednikiem
  * oraz musi maks 20 znakow,
  * dodatkowo update NOF_OPTIONS i O_* */
-#define OPTIONS_STRING "1: Force update;2: Connect to WiFi;3: WiFi Disconnect;4: Set time and date;5: Clear SD data;6: Toggle RGB usage;7: Display timeout;"
-#define NOF_OPTIONS	 7
+#define OPTIONS_STRING "1: Force update;2: Connect to WiFi;3: WiFi Disconnect;4: Set time and date;5: Clear SD data;6: Toggle RGB usage;7: Display timeout;8: Update interval;"
+#define NOF_OPTIONS	 8
 
 #define O_FORCE_U		1
 #define O_CONN_W		2
@@ -56,9 +56,9 @@ extern RGB_Mode R_Mode;
 #define O_CLEAR_SD		5
 #define O_TOGGLE_RGB 	6
 #define O_DISPLAY_T		7
+#define O_UPDATE_I		8
 
 #define MINUTE 				60
-#define UPDATE_INTERVAL 	30
 
 char WiFiPassword[MAX_PASSWD_LEN];
 uint8_t _PWD_index;
@@ -66,6 +66,7 @@ uint8_t _PWD_index;
 uint8_t UserDateTime[DT_LEN];
 
 uint16_t _screenTimeout;
+uint16_t _updateInterval;
 
 char _optionsChar;
 uint8_t _optionsRow;
@@ -93,6 +94,7 @@ void MENU_Init(void) {
 	_menuTick = 0;
 	_screenTick = 0;
 	_screenTimeout = 20;
+	_updateInterval = 30;
 
 	_updateClock = true;
 	_updateWeather = true;
@@ -589,18 +591,44 @@ void MENU_Clock() {
 	}
 }
 
+void _MENU_WriteOptionSettingTime(uint16_t time) {
+	char _temp[3] = { 0 };
+	itoa(time, _temp, 10);
+
+	LCD_SetCursor(0, 1);
+	LCD_PrintCentered("   ");
+	LCD_PrintCentered(_temp);
+}
+
 void MENU_SetDisplayTimeout(void) {
 	if (M_State != ST_SetDisplay) {
 		M_State = ST_SetDisplay;
 		LCD_ClearScreen();
 
-		_screenTimeout = 20;
-
 		LCD_PrintCentered("Enter timeout in [s]");
 		LCD_SetCursor(0, 1);
-		LCD_Print(" <=      20      => ");
+		LCD_Print(" <=              => ");
 		LCD_SetCursor(0, 3);
 		LCD_Print("Press DOWN to accept");
+
+		_MENU_WriteOptionSettingTime(_screenTimeout);
+
+		LCD_DisableBlink();
+	}
+}
+
+void MENU_SetUpdateInterval(void) {
+	if (M_State != ST_SetInterval) {
+		M_State = ST_SetInterval;
+		LCD_ClearScreen();
+
+		LCD_PrintCentered("Enter interval [min]");
+		LCD_SetCursor(0, 1);
+		LCD_Print(" <=              => ");
+		LCD_SetCursor(0, 3);
+		LCD_Print("Press DOWN to accept");
+
+		_MENU_WriteOptionSettingTime(_updateInterval);
 
 		LCD_DisableBlink();
 	}
@@ -687,7 +715,7 @@ uint8_t MENU_HandleInput(void) {
 				LCD_SetCursor(0, 3);
 				_optionsRow = 3;
 			}
-		}  else if (M_State == ST_SetDisplay) {
+		}  else if (M_State == ST_SetDisplay || M_State == ST_SetInterval) {
 			MENU_Clock();
 		}
 
@@ -720,12 +748,14 @@ uint8_t MENU_HandleInput(void) {
 					_screenTimeout -= 20;
 				}
 
-				char _temp[3] = { 0 };
-				itoa(_screenTimeout, _temp, 10);
+				_MENU_WriteOptionSettingTime(_screenTimeout);
+			}
+		} else if (M_State == ST_SetInterval) {
+			if (_updateInterval > 15) {
 
-				LCD_SetCursor(0, 1);
-				LCD_PrintCentered("   ");
-				LCD_PrintCentered(_temp);
+				_updateInterval -= 15;
+
+				_MENU_WriteOptionSettingTime(_updateInterval);
 			}
 		}
 
@@ -774,6 +804,8 @@ uint8_t MENU_HandleInput(void) {
 				MENU_Clock();
 			} else if (_currentOption == O_DISPLAY_T) {
 				MENU_SetDisplayTimeout();
+			} else if (_currentOption == O_UPDATE_I) {
+				MENU_SetUpdateInterval();
 			}
 
 		} else if (M_State == ST_SetDateTime) {
@@ -797,12 +829,14 @@ uint8_t MENU_HandleInput(void) {
 					_screenTimeout += 20;
 				}
 
-				char _temp[3] = { 0 };
-				itoa(_screenTimeout, _temp, 10);
+				_MENU_WriteOptionSettingTime(_screenTimeout);
+			}
+		} else if (M_State == ST_SetInterval) {
+			if (_updateInterval < 180) {
 
-				LCD_SetCursor(0, 1);
-				LCD_PrintCentered("   ");
-				LCD_PrintCentered(_temp);
+				_updateInterval += 15;
+
+				_MENU_WriteOptionSettingTime(_updateInterval);
 			}
 		}
 
@@ -822,7 +856,7 @@ void MENU_IncTick(void) {
 		LCD_BackgroundOff();
 	}
 
-	if (_menuTick >= MINUTE * UPDATE_INTERVAL) {
+	if (_menuTick >= MINUTE * _updateInterval) {
 		_updateWeather = true;
 		_menuTick = 0;
 	}

@@ -132,6 +132,7 @@ typedef enum {
 	ST_PassInput,
 	ST_SetDateTime,
 	ST_SetDisplay,
+	ST_SetInterval,
 	ST_None
 } StateEnum;
 

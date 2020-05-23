@@ -152,12 +152,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.3/Chart.min.js"></script>
 <script type="text/javascript">
 
+  var parent = document.getElementById('fetched_data');
   var url = window.location.href;
   var amount = 0;
 
-  var url = 'http://192.168.0.50/'; // DEBUG
+  var url = 'http://192.168.0.50/';
 
-  let to = url.lastIndexOf('/');
+  var to = url.lastIndexOf('/');
   to = to == -1 ? url.length : to + 1;
   url = url.substring(0, to);
 
@@ -181,35 +182,18 @@
       headers: {
         'Content-Type': 'text/plain'
       },
-      body: '{"offset":' + (offset + ix) + '}'
+      body: '{"offset":' + offset + ',"index":' + ix + '}'
     });
 
     let data = await response.json();
     return data;
   }
 
-  function createTableRow(index, obj) {
-    let row = document.createElement('tr');
-    document.getElementById('fetched_data').appendChild(row);
-
-    let nCell = document.createElement('td');
-    nCell.setAttribute('class', 'text-white ')
-    nCell.textContent = index + 1;
-    row.appendChild(nCell);
-
-    Object.keys(obj).forEach(key => {
-      let data = document.createElement('td');
-      data.setAttribute('class', 'text-white ')
-      data.textContent = obj[key];
-      row.appendChild(data);
-    });
-  }
-
   function getData() {
     var offset = parseInt(document.getElementById('offset-field').value);
-    var N = parseInt(document.getElementById('amount-field').value);
+    var N = parseInt(document.getElementById('amount-field').value) + 1;
 
-    let formField = document.getElementById("form-field");
+    var formField = document.getElementById("form-field");
     var form = formField.options[formField.selectedIndex].value;
 
     if (!Number.isInteger(offset) || offset < 0) {
@@ -227,86 +211,110 @@
     document.getElementById('spinner').style.display = 'block';
     document.getElementById('phase1').style.display = 'none';
 
-    let ix = 0;
+    var ix = 0;
     var fetchedData = [];
+    var loaded = false;
 
-    let intID = setInterval(() => {
-      fetchJson(url, offset, ix)
-        .then(obj => {
-          console.log(offset + ' ' + ix);
-          console.log(ix + ' ' + N);
+    for (var i = 0; i < N; i++) {
+      setTimeout(() => {
+        fetchJson(url, offset, ix)
+          .then(obj => {
 
-          if (obj.amount == 0) {
-            document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
-            return fetchedData;
-          }
+            if (obj.amount == 0) {
+              document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
+              return;
+            }
 
-          if (form === "raw") {
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('table').style.display = 'block';
+            if (form === "raw") {
+              var row = document.createElement('tr');
+              parent.appendChild(row);
 
-            createTableRow(ix, obj);
+              document.getElementById('spinner').style.display = 'none';
+              document.getElementById('table').style.display = 'block';
 
-          } else {
-            document.getElementById('spinner').style.display = 'none';
-            document.getElementById('progress-bar').style.display = 'block';
+              var data = document.createElement('td');
+              data.setAttribute('class', 'text-white ')
+              data.textContent = ix + 1;
+              row.appendChild(data);
 
-            let width = Math.round((fetchedData.length / N) * 100);
-            document.getElementById('progress-bar-handle').setAttribute('style', 'width:' + width + '%;');
+              Object.keys(obj).forEach(key => {
+                var data = document.createElement('td');
+                data.setAttribute('class', 'text-white ')
+                data.textContent = obj[key];
+                row.appendChild(data);
+              });
 
-            fetchedData.push(obj);
-          }
+            } else {
+              fetchedData.push(obj);
 
-          ix++;
+              document.getElementById('spinner').style.display = 'none';
+              document.getElementById('progress-bar').style.display = 'block';
 
-          if (ix == N) {
-            clearInterval(intID);
-            return fetchedData;
-          }
-        });
-    }, 2200);
+              var width = Math.round((fetchedData.length / N) * 100);
+              console.log('N: ' + N + '; Width: ' + width + '; Ix: ' + ix);
 
+              document.getElementById('progress-bar-handle').setAttribute('style', 'width:' + width + '%;');
 
-    if (form === 'bar') {
-      document.getElementById('spinner').style.display = 'none';
-      var ctx = document.getElementById('myChart').getContext('2d');
-      var myChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-          datasets: [{
-            label: '# of Votes',
-            data: [12, 19, 3, 5, 2, 3],
-            backgroundColor: [
-              'rgba(255, 99, 132, 0.2)',
-              'rgba(54, 162, 235, 0.2)',
-              'rgba(255, 206, 86, 0.2)',
-              'rgba(75, 192, 192, 0.2)',
-              'rgba(153, 102, 255, 0.2)',
-              'rgba(255, 159, 64, 0.2)'
-            ],
-            borderColor: [
-              'rgba(255, 99, 132, 1)',
-              'rgba(54, 162, 235, 1)',
-              'rgba(255, 206, 86, 1)',
-              'rgba(75, 192, 192, 1)',
-              'rgba(153, 102, 255, 1)',
-              'rgba(255, 159, 64, 1)'
-            ],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            yAxes: [{
-              ticks: {
-                beginAtZero: true
+              if (ix == N - 2) {
+                document.getElementById('progress-bar').style.display = 'none';
+                document.getElementById('spinner').style.display = 'block';
+                loaded = true;
               }
-            }]
-          }
-        }
-      });
+            }
+
+            ix++;
+          });
+      }, (i + 1) * 2200);
     }
+
+    setInterval(() => {
+      if (loaded) {
+        console.log(fetchedData);
+
+        if (form === 'bar') {
+          document.getElementById('spinner').style.display = 'none';
+          var ctx = document.getElementById('myChart').getContext('2d');
+          var myChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+              labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
+              datasets: [{
+                label: '# of Votes',
+                data: [12, 19, 3, 5, 2, 3],
+                backgroundColor: [
+                  'rgba(255, 99, 132, 0.2)',
+                  'rgba(54, 162, 235, 0.2)',
+                  'rgba(255, 206, 86, 0.2)',
+                  'rgba(75, 192, 192, 0.2)',
+                  'rgba(153, 102, 255, 0.2)',
+                  'rgba(255, 159, 64, 0.2)'
+                ],
+                borderColor: [
+                  'rgba(255, 99, 132, 1)',
+                  'rgba(54, 162, 235, 1)',
+                  'rgba(255, 206, 86, 1)',
+                  'rgba(75, 192, 192, 1)',
+                  'rgba(153, 102, 255, 1)',
+                  'rgba(255, 159, 64, 1)'
+                ],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              scales: {
+                yAxes: [{
+                  ticks: {
+                    beginAtZero: true
+                  }
+                }]
+              }
+            }
+          });
+        }
+      }
+
+      loaded = false;
+    }, 2200);
   }
 </script>
 

@@ -3,7 +3,6 @@
 
 #include "main.h"
 
-void HTTP_Init(void);
 void HTTP_HandleRequest(char*, char);
 
 #endif

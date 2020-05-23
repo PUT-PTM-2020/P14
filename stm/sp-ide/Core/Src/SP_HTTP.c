@@ -14,7 +14,6 @@
 
 #define ALL_AMOUNT(arg) 		"{\"amount\":"arg"}"
 #define ALL_OFFSET_PATTERN 		"offset\":"
-#define ALL_INDEX_PATTERN		"index\":"
 
 #define MAX_REQUEST_LEN		20
 #define MAX_RESPONSE_LEN	400
@@ -140,8 +139,6 @@ void HTTP_HandleRequest(char *req, char connID) {
 		NET_CloseConnSignal(connID);
 
 	} OR_REQUEST("POST /all/logs") {
-		int offset, index;
-
 		int ix = NET_GetIndexForPattern(ALL_OFFSET_PATTERN);
 		if (ix == -1) {
 			NET_CloseConnSignal(connID);
@@ -150,32 +147,13 @@ void HTTP_HandleRequest(char *req, char connID) {
 
 		int i = 0;
 		char tempStr[5] = { 0 };
-		while (req[ix] != ',') {
-			tempStr[i] = req[ix];
-			i++;
-			ix++;
-		}
-
-
-		ix = NET_GetIndexForPattern(ALL_INDEX_PATTERN);
-		if (ix == -1) {
-			NET_CloseConnSignal(connID);
-			return;
-		}
-
-		i = 0;
-		for (int i = 0; i < 5; i++)
-			tempStr[i] = 0;
 		while (req[ix] != '}') {
-			tempStr[i] = req[ix];
-			i++;
-			ix++;
+			tempStr[i++] = req[ix++];
 		}
 
-		offset = atoi(tempStr);
-		index = atoi(tempStr);
+		int offset = atoi(tempStr);
 
-		char *file = SD_GetJsonFromEnd(offset + index, &size);
+		char *file = SD_GetJsonFromEnd(offset, &size);
 		if (file != NULL) {
 			header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
 			NET_SendTCPData(connID, header);
