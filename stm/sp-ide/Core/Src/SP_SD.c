@@ -341,7 +341,7 @@ char* SD_GetJsonFromEnd(uint32_t offset, uint32_t *size) {
 
 	int name = _lastJsonNum - offset;
 
-	sprintf(filename, "%08d.jso", (name >= 0) ? name : MAX_FILENAME - name);
+	sprintf(filename, "%08d.jso", (name >= 0) ? name : MAX_FILENAME + name);
 
 	return SD_ReadFile(filename, size);
 }
