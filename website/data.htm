@@ -87,7 +87,6 @@
               <select class="form-control" id="form-field">
                 <option value="raw">Raw data</option>
                 <option value="line">Line chart</option>
-                <option value="bar">Bar chart</option>
               </select>
             </div>
             <div class="my-3"></div>
@@ -129,15 +128,23 @@
 
     <div class="container-fluid" id="progress-bar" style="display: none;">
       <div class="progress">
-        <div id="progress-bar-handle" class="progress-bar bg-warning" style="width: 25%"></div>
+        <div id="progress-bar-handle" class="progress-bar bg-warning progress-bar-striped progress-bar-animated"
+          role="progressbar" style="width: 25%"></div>
       </div>
     </div>
   </div>
 
   <div class="my-5"></div>
 
-  <canvas id="myChart" width="400" height="400"></canvas>
+  <div id="chart" class="container-fluid text-center" style="display: none;">
+    <canvas id="data-chart" width="400" height="400"></canvas>
 
+    <div class="my-3"></div>
+
+    <button type=" button" onclick="downloadChart()" class="btn btn-light">Download as PNG</button>
+  </div>
+
+  <div class="my-5"></div>
 
   <footer class="bg-black small text-center text-white-50">
     <div class="container">
@@ -155,7 +162,7 @@
   var url = window.location.href;
   var amount = 0;
 
-  var url = 'http://192.168.0.50/'; // DEBUG
+  url = 'http://192.168.0.50/';
 
   let to = url.lastIndexOf('/');
   to = to == -1 ? url.length : to + 1;
@@ -172,20 +179,19 @@
           document.getElementById('spinner').style.display = 'none';
         })
         .catch(e => console.log(e));
-    }, 1000);
+    }, 1500);
   };
 
-  async function fetchJson(url, offset, ix) {
-    let response = await fetch(url + 'all/logs', {
+  function fetchJson(url, offset) {
+    return fetch(url + 'all/logs', {
       method: 'POST',
       headers: {
         'Content-Type': 'text/plain'
       },
-      body: '{"offset":' + (offset + ix) + '}'
-    });
-
-    let data = await response.json();
-    return data;
+      body: '{"offset":' + offset + '}'
+    })
+      .then(res => res.json())
+      .catch(e => fetchJson(url, offset));
   }
 
   function createTableRow(index, obj) {
@@ -203,6 +209,104 @@
       data.textContent = obj[key];
       row.appendChild(data);
     });
+  }
+
+  function removeElement(elementId) {
+    var element = document.getElementById(elementId);
+    element.parentNode.removeChild(element);
+  }
+
+  function drawChart(fetchedData) {
+    document.getElementById('chart').style.display = 'block';
+    document.getElementById('spinner').style.display = 'none';
+    document.getElementById('progress-bar').style.display = 'none';
+
+    Chart.defaults.global.defaultFontColor = 'white';
+    Chart.defaults.global.defaultFontSize = 16;
+    Chart.defaults.global.defaultFontFamily = 'Verdana';
+
+    var ctx = document.getElementById('data-chart').getContext('2d');
+
+    var xData = [];
+
+    var humData = [];
+    var tempData = [];
+    var humDataOut = [];
+    var tempDataOut = [];
+
+    fetchedData.reverse();
+
+    fetchedData.forEach((item, index) => {
+      xData.push(item.time.slice(0, -3) + '-' + item.date.slice(0, -3));
+      if (item.inn) {
+        humData.push(item.hum);
+        tempData.push(item.temp);
+      } else {
+        humDataOut.push(item.hum);
+        tempDataOut.push(item.temp);
+      }
+    });
+
+    var data = {
+      labels: xData,
+      datasets: [{
+        label: "Humidity (inner) [%]",
+        borderColor: "blue",
+        data: humData,
+      }, {
+        label: "Humidity (outer) [%]",
+        borderColor: "green",
+        data: humDataOut,
+      }, {
+        label: "Temperature (inner) [C]",
+        borderColor: "red",
+        data: tempData,
+      }, {
+        label: "Temperature (outer) [C]",
+        borderColor: "orange",
+        data: tempDataOut,
+      }
+      ]
+    };
+
+    var options = {
+      scales: {
+        yAxes: [{
+          ticks: {
+            beginAtZero: true
+          }
+        }],
+        xAxes: [{
+          gridLines: {
+            tickMarkLength: 15
+          },
+        }]
+      }
+    };
+
+    var myChart = new Chart(ctx, {
+      type: 'line',
+      data: data,
+      options: options
+    });
+
+    removeElement("progress-bar");
+  }
+
+  function downloadChart() {
+    let link = document.createElement("a");
+
+    let date = new Date();
+    let day = date.getDate().toString().padStart(2, '0');
+    let month = (date.getMonth() + 1).toString().padStart(2, '0');
+    let year = date.getFullYear().toString().substring(2);
+
+    let hour = date.getHours().toString().padStart(2, '0');
+    let minute = date.getMinutes().toString().padStart(2, '0');
+
+    link.download = day + '.' + month + '.' + year + '-' + hour + ':' + minute + "_STM_WS.png";
+    link.href = document.getElementById("data-chart").toDataURL("image/png").replace("image/png", "image/octet-stream");
+    link.click();
   }
 
   function getData() {
@@ -231,14 +335,11 @@
     var fetchedData = [];
 
     let intID = setInterval(() => {
-      fetchJson(url, offset, ix)
+      fetchJson(url, offset + ix)
         .then(obj => {
-          console.log(offset + ' ' + ix);
-          console.log(ix + ' ' + N);
-
           if (obj.amount == 0) {
             document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
-            return fetchedData;
+            return;
           }
 
           if (form === "raw") {
@@ -257,56 +358,17 @@
             fetchedData.push(obj);
           }
 
-          ix++;
-
-          if (ix == N) {
+          if (++ix === N) {
             clearInterval(intID);
-            return fetchedData;
+
+            if (form != "raw") {
+              drawChart(fetchedData);
+            }
+
+            return;
           }
         });
-    }, 2200);
-
-
-    if (form === 'bar') {
-      document.getElementById('spinner').style.display = 'none';
-      var ctx = document.getElementById('myChart').getContext('2d');
-      var myChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-          labels: ['Red', 'Blue', 'Yellow', 'Green', 'Purple', 'Orange'],
-          datasets: [{
-            label: '# of Votes',
-            data: [12, 19, 3, 5, 2, 3],
-            backgroundColor: [
-              'rgba(255, 99, 132, 0.2)',
-              'rgba(54, 162, 235, 0.2)',
-              'rgba(255, 206, 86, 0.2)',
-              'rgba(75, 192, 192, 0.2)',
-              'rgba(153, 102, 255, 0.2)',
-              'rgba(255, 159, 64, 0.2)'
-            ],
-            borderColor: [
-              'rgba(255, 99, 132, 1)',
-              'rgba(54, 162, 235, 1)',
-              'rgba(255, 206, 86, 1)',
-              'rgba(75, 192, 192, 1)',
-              'rgba(153, 102, 255, 1)',
-              'rgba(255, 159, 64, 1)'
-            ],
-            borderWidth: 1
-          }]
-        },
-        options: {
-          scales: {
-            yAxes: [{
-              ticks: {
-                beginAtZero: true
-              }
-            }]
-          }
-        }
-      });
-    }
+    }, 2500);
   }
 </script>
 
