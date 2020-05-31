@@ -51,6 +51,7 @@
 * CSS 3 - wygląd strony internetowej
 * RESTlike API - struktura działania serwera HTTP
 * Fetch API - pobieranie informacji z serwera HTTP
+* ChartJS - rysowanie wykresu z otrzymanych danych
 * Bootstrap 4 - responsywność strony internetowej
 
 ### Biblioteki języka C użyte w projekcie:
