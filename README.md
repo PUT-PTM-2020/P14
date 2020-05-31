@@ -57,6 +57,9 @@
 ### Biblioteki języka C użyte w projekcie:
 * FatFs by elm-chan
 
+### Biblioteki języka JavaScript użyte w projekcie:
+* ChartJS
+
 ### Prezentacja [elementów](https://github.com/PUT-PTM-2020/P14/tree/master/stm/stmphotos) hardware projektu:
 
 <p align="center">
