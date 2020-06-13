@@ -12,7 +12,7 @@ typedef struct {
 	uint8_t time[6];
 } SD_Time;
 
-#define MAX_FILESIZE 		7000
+#define MAX_FILESIZE 		12000
 #define MAX_FILENAME_LEN 	13
 #define MAX_LS_LEN			1400+2
 #define MAX_FILENAME 		99999999
@@ -203,6 +203,10 @@ char* SD_ReadFile(char *filename, uint32_t *size) {
 
 	while (!f_eof(&_fileH)) {
 		_res = f_read(&_fileH, &_buffer[index++], 1, &_readB);
+
+		if (_res != FR_OK) {
+			break;
+		}
 	}
 
 	f_close(&_fileH);
