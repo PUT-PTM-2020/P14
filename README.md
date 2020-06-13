@@ -26,12 +26,23 @@
 	   
    1. __Clear SD data__ 	- wyczyść wszystkie logi pogody dostępne na urządzeniu.
    1. __Toggle RGB usage__ 	- przełącz używanie przez urządzenie diody led.
+   
+   1. __Display timeout__ - ustaw czas do wygaszenia ekranu.
+   
+   	     Na ekranie zmieniamy czas za pomocą __lewo__ oraz __prawo__, a wprowadzone dane akceptujemy za pomocą __dół__.
+	     
+	     
+   1. __Update interval__ - ustaw czas automatycznego odświeżania pogody.
+   
+   	     Na ekranie zmieniamy czas za pomocą __lewo__ oraz __prawo__, a wprowadzone dane akceptujemy za pomocą __dół__.
 
 #### Instrukcja obsługi strony internetowej
 1. Aby poprawnie uzyskać dostęp do danych udostępnianych przez stację pogodową niezbędne jest posiadanie sprawnego połączenia internetowego. Bez niego strona internetowa będzie wyświetlana jako czysty html, bez dodatkowej szaty wizualnej.
 1. Użytkownik po podłączeniu do sieci bezprzewodowej wchodząc pod adres IP nadany stacji w podsieci routera znajdzie się na stronie głównej.
 1. Główna strona zawiera umieszone pod napisem `Weather Station` odnośniki do następujących podstron: `data`, `about`. Obecne poniżej pole `Current Weather` po pobraniu danych z urządzenia wyświetli aktualną pogodę oraz zsynchronizuje czas urządzenia z czasem systemu stacji.
 1. Wciśnięcie przez użytkownika odnośnika `data` skutkować będzie przeniesieniem na podstronę, gdzie została udostępniona możliwość podglądu starszych odczytów pogody znajdujących się w pamięci urządzenia. Po pobraniu ilości dostępnych danych użytkownik zostanie poproszony o wpisanie zakresu danych do pobrania.
+	* Udostępniona została także możliwość generowania wykresów na podstawie pobranych danych, wybór reprezentacji jest możliwy na ekranie głównym podstrony `data`. 
+	* Po wygenerowaniu wykresu możliwe jest jego pobranie w formacie `png` za pomocą przycisku pod wykresem.
 1. Wciśnięcie przez  użytkownika odnośnika `about` powoduję przejście na podstronę poświęconą autorom projektu oraz informacjom ogólnym na temat stacji pogodowej.
 ## O projekcie
 ### Celem projektu było własnoręczne utworzenie stacji pogodowej przy zastosowaniu następujących elementów:
@@ -55,6 +66,9 @@
 
 ### Biblioteki języka C użyte w projekcie:
 * FatFs by elm-chan
+
+### Biblioteki języka JavaScript użyte w projekcie:
+* ChartJS
 
 ### Prezentacja [elementów](https://github.com/PUT-PTM-2020/P14/tree/master/stm/stmphotos) hardware projektu:
 
