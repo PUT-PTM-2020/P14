@@ -169,6 +169,8 @@
 
   window.onload = function () {
     setTimeout(() => {
+      console.log('fetching all');
+
       fetch(url + 'all')
         .then(res => res.json())
         .then(obj => {
@@ -180,7 +182,7 @@
           document.getElementById('spinner').style.display = 'none';
         })
         .catch(e => console.log(e));
-    }, 1500);
+    }, 2000);
   };
 
   async function fetchJson(address) {
@@ -260,9 +262,8 @@
 
       if (isNew) {
         if (fetchedData[fetchedData.length - 1].last == -1) {
-          document.getElementById('error').innerHTML = 'A log is missing on the SD card.';
-          fetchedData[fetchedData.length - 1].amount = fileNames[ix];
-          fetchedData[fetchedData.length - 1].last = missing;
+          document.getElementById('error').innerHTML = 'A log cannot be read from the SD card.';
+          fetchedData.pop();
         }
 
         if (form === "raw") {

@@ -12,7 +12,7 @@ typedef struct {
 	uint8_t time[6];
 } SD_Time;
 
-#define MAX_FILESIZE 		12000
+#define MAX_FILESIZE 		12500
 #define MAX_FILENAME_LEN 	13
 #define MAX_LS_LEN			1400+2
 #define MAX_FILENAME 		99999999
@@ -333,7 +333,7 @@ uint32_t SD_GetNofJsons(void) {
 		}
 	}
 
-	return amount;
+	return amount - 1;
 }
 
 char* SD_GetLastJson(uint32_t *size) {
