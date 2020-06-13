@@ -60,12 +60,25 @@
 
   <div class="my-5"></div>
 
-  <section id="authors">
+  <section id="about">
     <div class="container-fluid">
       <h4 class="text-white text-center m-0">About</h4>
       <hr class="my-4">
       <p class="lead text-white text-center">The site is used to operate the home weather station.<br> You can check the
         weather from anywhere in your home using your phone or computer.<br>If you're having trouble, please check the <a href="https://github.com/PUT-PTM-2020/P14/blob/master/README.md">user manual</a>.</p>
+    </div>
+  </section>
+
+  <div class="my-5"></div>
+
+  <section id="clear">
+    <div class="container-fluid text-center">
+      <h4 class="text-white text-center m-0">Reset Web Storage</h4>
+      <hr class="my-4">
+      <p class="lead text-white text-center">If you're having problems with website log checking after getting over 99999999 logs (wow!) press the button below to clean all pre-saved logs and fetch from zero again.</p>
+      <div class="my-4">
+      <button type=" button" onclick="clearWebStorage()" class="btn btn-light">Clear Storage</button>
+      <p class="lead text-white text-center" id="ok" style="display: none;">All clear!</p>
     </div>
   </section>
 
@@ -114,4 +127,12 @@
 
 </body>
 
+<script>
+
+  function clearWebStorage() {
+    localStorage.clear();
+    document.getElementById("ok").style.display = 'block';
+  }
+  
+</script>
 </html>

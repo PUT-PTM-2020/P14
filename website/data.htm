@@ -163,8 +163,6 @@
   var amount = 0;
   var lastName = 0;
 
-  url = 'http://192.168.0.57/'
-
   let to = url.lastIndexOf('/');
   to = to == -1 ? url.length : to + 1;
   url = url.substring(0, to);
@@ -197,7 +195,6 @@
         return true;
       }
     }
-
     return false;
   }
 
@@ -226,54 +223,78 @@
     let ix = 0;
     var fetchedData = [];
     var fileNames = [];
+    let paused = false;
+
+    lastName -= offset;
 
     for (let i = lastName; i > (lastName - N); i--) {
       fileNames.push(i.toString().padStart(8, '0') + '.JSO')
     }
 
-    let intID = setInterval(() => {
-      console.log('attempt at ix=', ix)
-      fetchJson(url + fileNames[ix])
-        .then(obj => {
-          if (!containsLog(fetchedData, obj)) {
-            fetchedData.push(obj);
-            console.log(obj);
+    let outID = setInterval(() => {
+      let log = localStorage.getItem(fileNames[ix]);
+      let isNew = false;
 
-            if (obj.amount == 0) {
-              document.getElementById('error').innerHTML = 'There are no more logs to fetch in this range.';
-              return;
+      if (log != null) {
+        fetchedData.push(JSON.parse(log));
+        isNew = true;
+
+      } else if (!paused) {
+        console.log('need to fetch at ix =', ix);
+        paused = true;
+
+        fetchJson(url + fileNames[ix])
+          .then(obj => {
+            if (!containsLog(fetchedData, obj)) {
+              console.log('fetched!');
+
+              fetchedData.push(obj);
+              localStorage.setItem(fileNames[ix], JSON.stringify(obj));
+              isNew = true;
+              paused = false;
             }
+          })
+          .catch(e => paused = false)
+      }
 
-            if (form === "raw") {
-              document.getElementById('spinner').style.display = 'none';
-              document.getElementById('table').style.display = 'block';
 
-              createTableRow(ix, obj);
+      if (isNew) {
+        if (fetchedData[fetchedData.length - 1].last == -1) {
+          document.getElementById('error').innerHTML = 'A log is missing on the SD card.';
+          fetchedData[fetchedData.length - 1].amount = fileNames[ix];
+          fetchedData[fetchedData.length - 1].last = missing;
+        }
 
-            } else {
-              document.getElementById('spinner').style.display = 'none';
-              document.getElementById('progress-bar').style.display = 'block';
+        if (form === "raw") {
+          document.getElementById('table').style.display = 'block';
 
-              let width = Math.round((fetchedData.length / N) * 100);
-              document.getElementById('progress-bar-handle').setAttribute('style', 'width:' + width + '%;');
-            }
+          createTableRow(ix, fetchedData[fetchedData.length - 1]);
 
-            if (++ix === N) {
-              clearInterval(intID);
+        } else {
+          document.getElementById('spinner').style.display = 'none';
+          document.getElementById('progress-bar').style.display = 'block';
 
-              if (form != "raw") {
-                drawChart(fetchedData);
-              }
+          let width = Math.round((fetchedData.length / N) * 100);
+          document.getElementById('progress-bar-handle').setAttribute('style', 'width:' + width + '%;');
+        }
 
-              return;
-            }
-          } else if (ix >= N) {
-            return;
-          } else ++ix;
-        }).catch(e => console.log("after parse error =[", ix, "]>", e));
-    }, 2000);
+        ix++;
+      }
+
+      if (ix >= N) {
+        console.log('exiting at ix =', ix);
+        document.getElementById('spinner').style.display = 'none';
+
+        if (form != "raw") {
+          console.log(fetchedData)
+          drawChart(fetchedData);
+        }
+
+        clearInterval(outID);
+        return;
+      }
+    }, 500)
   }
-
 
   function createTableRow(index, obj) {
     let row = document.createElement('tr');
