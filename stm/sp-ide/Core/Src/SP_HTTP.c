@@ -12,8 +12,7 @@
 #define DT_UPDATE_OK		"{\"id\":\"ok\"}"
 #define DT_UPDATE_ERR		"{\"id\":\"err\"}"
 
-#define ALL_AMOUNT(arg) 		"{\"amount\":"arg"}"
-#define ALL_OFFSET_PATTERN 		"offset\":"
+#define ALL_AMOUNT_AND_LAST(arg1, arg2) 	"{\"amount\":"arg1", \"last\":"arg2"}"
 
 #define MAX_REQUEST_LEN		20
 #define MAX_RESPONSE_LEN	400
@@ -34,11 +33,11 @@
 
 char _response[MAX_RESPONSE_LEN];
 char _line[MAX_LINE_LEN];
-char _request[MAX_REQUEST_LEN];
+char _requestBuf[MAX_REQUEST_LEN];
 
 #define __resetResponse() for(int i=0;i<MAX_RESPONSE_LEN;i++)_response[i]=0
 #define __resetLine() for(int i=0;i<MAX_LINE_LEN;i++)_line[i]=0
-#define __resetRequest() for(int i=0;i<MAX_REQUEST_LEN;i++)_request[i]=0
+#define __resetRequest() for(int i=0;i<MAX_REQUEST_LEN;i++)_requestBuf[i]=0
 
 #define IF_REQUEST(arg) if(strcmp(request,arg)==0)
 #define OR_REQUEST(arg) else IF_REQUEST(arg)
@@ -75,12 +74,12 @@ char* _HTTP_GetRawRequest(char *request) {
 
 	__resetRequest();
 	while (request[index] != 'H') {
-		_request[index] = request[index];
+		_requestBuf[index] = request[index];
 		index++;
 	}
 
-	_request[--index] = 0;
-	return (char*) _request;
+	_requestBuf[--index] = 0;
+	return (char*) _requestBuf;
 }
 
 void HTTP_HandleRequest(char *req, char connID) {
@@ -128,44 +127,15 @@ void HTTP_HandleRequest(char *req, char connID) {
 
 	} OR_REQUEST("GET /all") {
 		uint32_t len = SD_GetNofJsons();
+		uint32_t last = SD_GetLastFileno();
 
 		char file[100] = { 0 };
-		size = sprintf(file, ALL_AMOUNT("%lu"), len);
+		size = sprintf(file, ALL_AMOUNT_AND_LAST("%lu", "%lu"), len, last);
 
 		header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
 
 		NET_SendTCPData(connID, header);
 		NET_SendTCPData(connID, file);
-		NET_CloseConnSignal(connID);
-
-	} OR_REQUEST("POST /all/logs") {
-		int ix = NET_GetIndexForPattern(ALL_OFFSET_PATTERN);
-		if (ix == -1) {
-			NET_CloseConnSignal(connID);
-			return;
-		}
-
-		int i = 0;
-		char tempStr[5] = { 0 };
-		while (req[ix] != '}') {
-			tempStr[i++] = req[ix++];
-		}
-
-		int offset = atoi(tempStr);
-
-		char *file = SD_GetJsonFromEnd(offset, &size);
-		if (file != NULL) {
-			header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
-			NET_SendTCPData(connID, header);
-			NET_SendTCPData(connID, file);
-		} else {
-			size = strlen(ALL_AMOUNT("0"));
-
-			header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
-			NET_SendTCPData(connID, header);
-			NET_SendTCPData(connID, ALL_AMOUNT("0"));
-		}
-
 		NET_CloseConnSignal(connID);
 
 	} OR_REQUEST("POST /dt") {
@@ -217,11 +187,43 @@ void HTTP_HandleRequest(char *req, char connID) {
 			NET_CloseConnSignal(connID);
 		}
 	} else {
-		/* nieobslugiwane zadanie */
-		char *file = SD_ReadFile("error.htm", &size);
-		header = _HTTP_ParseHeader(RSP_NOT_FOUND, CT_HTML, size, CN_CLOSE);
-		NET_SendTCPData(connID, header);
-		NET_SendTCPData(connID, file);
-		NET_CloseConnSignal(connID);
+		/* albo GET /xxxxxxxx.JSO */
+		char filename[13] = { 0 };
+		int i = 0, j = 0;
+
+		while (request[i++] != '/')
+			;
+
+		while (request[i] != 0) {
+			filename[j] = request[i];
+			i++;
+			j++;
+		}
+
+		if (filename[j - 4] == '.' && filename[j - 3] == 'J'
+				&& filename[j - 2] == 'S' && filename[j - 1] == 'O') {
+
+			char *file = SD_ReadFile(filename, &size);
+			if (file != NULL) {
+				header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
+				NET_SendTCPData(connID, header);
+				NET_SendTCPData(connID, file);
+			} else {
+				size = strlen(ALL_AMOUNT_AND_LAST("0", "-1"));
+
+				header = _HTTP_ParseHeader(RSP_OK, CT_JSON, size, CN_CLOSE);
+				NET_SendTCPData(connID, header);
+				NET_SendTCPData(connID, ALL_AMOUNT_AND_LAST("0", "-1"));
+			}
+
+			NET_CloseConnSignal(connID);
+		} else {
+			/* albo nieobslugiwane zadanie */
+			char *file = SD_ReadFile("error.htm", &size);
+			header = _HTTP_ParseHeader(RSP_NOT_FOUND, CT_HTML, size, CN_CLOSE);
+			NET_SendTCPData(connID, header);
+			NET_SendTCPData(connID, file);
+			NET_CloseConnSignal(connID);
+		}
 	}
 }

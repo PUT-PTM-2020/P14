@@ -13,6 +13,7 @@ void SD_RemoveAllJsons(void);
 
 uint8_t SD_CreateJson(bool, float[], char[], char[]);
 uint32_t SD_GetNofJsons(void);
+uint32_t SD_GetLastFileno(void);
 
 char* SD_ReadFile(char*, uint32_t*);
 char* SD_GetLastJson(uint32_t*);

@@ -374,3 +374,7 @@ void SD_RemoveAllJsons(void) {
 
 	_SD_RestartNaming();
 }
+
+uint32_t SD_GetLastFileno(void) {
+	return _lastJsonNum;
+}
