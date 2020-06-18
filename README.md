@@ -63,6 +63,7 @@
 * RESTlike API - struktura działania serwera HTTP
 * Fetch API - pobieranie informacji z serwera HTTP
 * Bootstrap 4 - responsywność strony internetowej
+* Web Storage - cachowanie danych w aplikacji klienckiej
 
 ### Biblioteki języka C użyte w projekcie:
 * FatFs by elm-chan
